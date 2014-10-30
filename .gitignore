@@ -8,3 +8,4 @@ src/ra/RAXConstructor.*
 bin
 .classpath
 .project
+sample.db
