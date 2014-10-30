@@ -5,3 +5,6 @@ src/ra/RALexerTokenTypes.*
 src/ra/RAParser.*
 src/ra/RAXConstructor.*
 **/.*.swp
+bin
+.classpath
+.project
