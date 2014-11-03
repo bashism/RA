@@ -60,6 +60,35 @@ public class RA {
         out.println();
         return;
     }
+    protected static void commandUsage() {
+        out.println("Terminate your commands or expressions by \";\"");
+        out.println();
+        out.println("Commands:");
+        out.println("\\help: print this message");
+        out.println("\\quit: exit ra");
+        out.println("\\list: list all relations in the database");
+        out.println("\\sqlexec_{STATEMENT}: execute SQL in the database");
+        out.println();
+        out.println("Relational algebra expressions:");
+        out.println("R: relation named by R");
+        out.println("\\select_{COND} EXP: selection over an expression");
+        out.println("\\project_{ATTR_LIST} EXP: projection of an expression");
+        out.println("EXP_1 \\join EXP_2: natural join between two expressions");
+        out.println("EXP_1 \\join_{COND} EXP_2: theta-join between two expressions");
+        out.println("EXP_1 \\cross EXP_2: cross-product between two expressions");
+        out.println("EXP_1 \\union EXP_2: union between two expressions");
+        out.println("EXP_1 \\diff EXP_2: difference between two expressions");
+        out.println("EXP_1 \\intersect EXP_2: intersection between two expressions");
+        out.println("\\rename_{NEW_ATTR_NAME_LIST} EXP: rename all attributes of an expression");
+        out.println();
+    }
+    protected static String[] completions() {
+    	return new String [] {
+                "\\help;", "\\quit;", "\\list;", "\\sqlexec_{",
+                "\\select_{", "\\project_{", "\\join", "\\join_{", "\\rename_{",
+                "\\cross", "\\union", "\\diff", "\\intersect"
+            };
+    }
 
     protected static void prompt(int line) {
         if (reader == null) return;
@@ -230,11 +259,7 @@ public class RA {
             props.setProperty("schema", schema);
 
         if (reader != null) {
-            reader.addCompleter(new StringsCompleter(new String [] {
-                "\\help;", "\\quit;", "\\list;", "\\sqlexec_{",
-                "\\select_{", "\\project_{", "\\join", "\\join_{", "\\rename_{",
-                "\\cross", "\\union", "\\diff", "\\intersect"
-            }));
+            reader.addCompleter(new StringsCompleter(completions()));
         }
 
         DataInputStream din = new DataInputStream(in);
@@ -270,26 +295,7 @@ public class RA {
             ast.getType() == RALexerTokenTypes.EOF) {
             exit();
         } else if (ast.getType() == RALexerTokenTypes.HELP) {
-            out.println("Terminate your commands or expressions by \";\"");
-            out.println();
-            out.println("Commands:");
-            out.println("\\help: print this message");
-            out.println("\\quit: exit ra");
-            out.println("\\list: list all relations in the database");
-            out.println("\\sqlexec_{STATEMENT}: execute SQL in the database");
-            out.println();
-            out.println("Relational algebra expressions:");
-            out.println("R: relation named by R");
-            out.println("\\select_{COND} EXP: selection over an expression");
-            out.println("\\project_{ATTR_LIST} EXP: projection of an expression");
-            out.println("EXP_1 \\join EXP_2: natural join between two expressions");
-            out.println("EXP_1 \\join_{COND} EXP_2: theta-join between two expressions");
-            out.println("EXP_1 \\cross EXP_2: cross-product between two expressions");
-            out.println("EXP_1 \\union EXP_2: union between two expressions");
-            out.println("EXP_1 \\diff EXP_2: difference between two expressions");
-            out.println("EXP_1 \\intersect EXP_2: intersection between two expressions");
-            out.println("\\rename_{NEW_ATTR_NAME_LIST} EXP: rename all attributes of an expression");
-            out.println();
+        	commandUsage();
         } else if (ast.getType() == RALexerTokenTypes.LIST) {
             try {
                 ArrayList<String> tables = db.getTables();
