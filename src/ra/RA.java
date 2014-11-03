@@ -4,7 +4,9 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Properties;
 import java.sql.*;
+
 import jargs.gnu.CmdLineParser;
+import jargs.gnu.CmdLineParser.OptionException;
 import antlr.RecognitionException;
 import antlr.TokenStreamException;
 import antlr.CommonAST;
@@ -129,51 +131,26 @@ public class RA {
     }
 
     public static void main(String[] args) {
-
         welcome();
-        CmdLineParser cmdLineParser = new CmdLineParser();
-        CmdLineParser.Option helpO = cmdLineParser.addBooleanOption('h', "help");
-        CmdLineParser.Option inputO = cmdLineParser.addStringOption('i', "input");
-        CmdLineParser.Option outputO = cmdLineParser.addStringOption('o', "output");
-        CmdLineParser.Option passwordO = cmdLineParser.addStringOption('p', "password");
-        CmdLineParser.Option promptPasswordO = cmdLineParser.addBooleanOption('P', "prompt-password");
-        CmdLineParser.Option schemaO = cmdLineParser.addStringOption('s', "schema");
-        CmdLineParser.Option urlO = cmdLineParser.addStringOption('l', "url");
-        CmdLineParser.Option userO = cmdLineParser.addStringOption('u', "user");
-        CmdLineParser.Option verboseO = cmdLineParser.addBooleanOption('v', "verbose");
+        RAConfig config = null;
         try {
-            cmdLineParser.parse(args);
-        } catch (CmdLineParser.OptionException e) {
+            config = new RAConfig(args);
+        } catch (OptionException | RAConfigException e) {
             err.println(e.getMessage());
             usage();
             exit(1);
         }
-        boolean help = ((Boolean)cmdLineParser.getOptionValue(helpO, Boolean.FALSE)).booleanValue();
-        String inFileName = (String)cmdLineParser.getOptionValue(inputO);
-        String outFileName = (String)cmdLineParser.getOptionValue(outputO);
-        String password = (String)cmdLineParser.getOptionValue(passwordO);
-        boolean promptPassword = ((Boolean)cmdLineParser.getOptionValue(promptPasswordO, Boolean.FALSE)).booleanValue();
-        String schema = (String)cmdLineParser.getOptionValue(schemaO);
-        String url = (String)cmdLineParser.getOptionValue(urlO);
-        String user = (String)cmdLineParser.getOptionValue(userO);
-        boolean verbose = ((Boolean)cmdLineParser.getOptionValue(verboseO, Boolean.FALSE)).booleanValue();
-        if (help) {
+
+        if (config.help()) {
             usage();
             exit(1);
         }
-        String propsFileName = null;
-        String[] otherArgs = cmdLineParser.getRemainingArgs();
-        if (otherArgs.length > 1) {
-            usage();
-            exit(1);
-        } else if (otherArgs.length == 1) {
-            propsFileName = otherArgs[0];
-        }
-        if (inFileName != null) {
+
+        if (config.inFileName() != null) {
             try {
-                in = new FileInputStream(inFileName);
+                in = new FileInputStream(config.inFileName());
             } catch (FileNotFoundException e) {
-                err.println("Error opening input file '" + inFileName + "'");
+                err.println("Error opening input file '" + config.inFileName() + "'");
                 err.println();
                 exit(1);
             }
@@ -190,21 +167,21 @@ public class RA {
                 exit(1);
             }
         }
-        if (outFileName != null) {
+        if (config.outFileName() != null) {
             try {
-                OutputStream log = new FileOutputStream(outFileName, true);
+                OutputStream log = new FileOutputStream(config.outFileName(), true);
                 out = new TeePrintStream(out, log);
                 err = new TeePrintStream(err, log);
                 in = new LogInputStream(in, log);
             } catch (FileNotFoundException e) {
-                err.println("Error opening output file '" + outFileName + "'");
+                err.println("Error opening output file '" + config.outFileName() + "'");
                 err.println();
                 exit(1);
             }
         }
         Properties props = new Properties();
         InputStream propsIn = null;
-        if (propsFileName == null) {
+        if (config.propsFileName() == null) {
             propsIn = RA.class.getResourceAsStream("ra.properties");
             if (propsIn == null) {
                 err.println("Error loading properties from /ra/ra.properties in the jar file");
@@ -220,21 +197,21 @@ public class RA {
             }
         } else {
             try {
-                props.load(new FileInputStream(propsFileName));
+                props.load(new FileInputStream(config.propsFileName()));
             } catch (IOException e) {
-                err.println("Error loading properties from " + propsFileName);
+                err.println("Error loading properties from " + config.propsFileName());
                 err.println(e.toString());
                 err.println();
                 exit(1);
             }
         }
-        if (url != null)
-            props.setProperty("url", url);
-        if (user != null)
-            props.setProperty("user", user);
-        if (password != null)
-            props.setProperty("password", password);
-        if (promptPassword) {
+        if (config.url() != null)
+            props.setProperty("url", config.url());
+        if (config.user() != null)
+            props.setProperty("user", config.user());
+        if (config.password() != null)
+            props.setProperty("password", config.password());
+        if (config.promptPassword()) {
             try {
                 props.setProperty("password",
                                   getPassword((reader == null)?
@@ -255,8 +232,8 @@ public class RA {
             err.println();
             exit(1);
         }
-        if (schema != null)
-            props.setProperty("schema", schema);
+        if (config.schema() != null)
+            props.setProperty("schema", config.schema());
 
         if (reader != null) {
             reader.addCompleter(new StringsCompleter(completions()));
@@ -271,7 +248,7 @@ public class RA {
             try {
                 parser.start();
                 CommonAST ast = (CommonAST)parser.getAST();
-                evaluate(verbose, db, ast);
+                evaluate(config.verbose(), db, ast);
             } catch (TokenStreamException e) {
                 skipInput();
                 err.println("Error tokenizing input:");
